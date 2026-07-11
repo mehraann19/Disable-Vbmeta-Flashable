@@ -20,6 +20,19 @@ ui_print "#####################################################"
 sleep 1
 ui_print " "
 
+# Extract device information
+MODEL=$(getprop ro.product.model)
+CODENAME=$(getprop ro.product.device)
+SLOT=$(getprop ro.boot.slot_suffix)
+
+ui_print "System Diagnostic Information:"
+[ -n "$MODEL" ] && ui_print "  -> Device Model: $MODEL"
+[ -n "$CODENAME" ] && ui_print "  -> Codename:     $CODENAME"
+[ -n "$SLOT" ] && ui_print "  -> Active Slot:  $SLOT"
+
+sleep 1
+ui_print " "
+
 # Universal AVB Engine Resolution:
 # 1. Prefer native recovery build environment commands if available.
 # 2. Fallback to extracting bundled high-performance static binary.
@@ -46,35 +59,46 @@ fi
 sleep 1
 ui_print " "
 
-# Get avbctl status using resolved engine
-VERITY=$($AVB_ENGINE get-verity)
-VERIFICATION=$($AVB_ENGINE get-verification)
+# Query AVB verity and verification flags
+ui_print "Querying AVB status..."
+VERITY=$($AVB_ENGINE get-verity 2>&1)
+EXIT_CODE=$?
+VERIFICATION=$($AVB_ENGINE get-verification 2>&1)
 
-# Print avb vbmeta status
-ui_print "Checking AVB Vbmeta status:"
-ui_print "  -> $VERITY"
-ui_print "  -> $VERIFICATION"
+if [ $EXIT_CODE -ne 0 ]; then
+  ui_print "❌ ERROR: Failed to communicate with AVB interface!"
+  ui_print "  Details: $VERITY"
+  [ $EXTRACTED -eq 1 ] && rm -f "/tmp/avbctl"
+  exit 1
+fi
+
+ui_print "Current AVB Vbmeta status:"
+ui_print "  -> Verity State:       $VERITY"
+ui_print "  -> Verification State: $VERIFICATION"
 
 sleep 1
 ui_print " "
 
-# Disable AVB vbmeta verity and verification if enabled
-if [[ $VERITY == *disabled* ]]; then
-  ui_print "AVB verification is already disabled. Nothing to do."
-else
-  ui_print "Disabling AVB verity & verification policy..."
-  DISABLE_VERITY=$($AVB_ENGINE --force disable-verity)
-  DISABLE_VERIFICATION=$($AVB_ENGINE --force disable-verification)
-  
-  ui_print "  -> ${DISABLE_VERITY%%.*}"
-  ui_print "  -> ${DISABLE_VERIFICATION%%.*}"
+# Evaluate and disable AVB verity and verification policies
+case "$VERITY" in
+  *disabled*)
+    ui_print "AVB verification is already disabled. Nothing to do."
+    ;;
+  *)
+    ui_print "Disabling AVB verity & verification policy..."
+    DISABLE_VERITY=$($AVB_ENGINE --force disable-verity 2>&1)
+    DISABLE_VERIFICATION=$($AVB_ENGINE --force disable-verification 2>&1)
+    
+    ui_print "  -> ${DISABLE_VERITY%%.*}"
+    ui_print "  -> ${DISABLE_VERIFICATION%%.*}"
 
-  sleep 1
-  ui_print " "
+    sleep 1
+    ui_print " "
 
-  ui_print "⚠️ NOTE: If the device bootloops or stays stuck in recovery mode,"
-  ui_print "   you may need to perform a 'Format Data' partition operation in TWRP."
-fi
+    ui_print "⚠️ NOTE: If the device bootloops or stays stuck in recovery mode,"
+    ui_print "   you may need to perform a 'Format Data' partition operation in TWRP."
+    ;;
+esac
 
 # Cleanup temporary files if extracted
 if [ $EXTRACTED -eq 1 ]; then
