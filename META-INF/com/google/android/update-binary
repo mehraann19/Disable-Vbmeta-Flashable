@@ -13,23 +13,42 @@ ui_print() {
 }
 
 ui_print "#####################################################"
-ui_print "#######         FLASH DISABLE VBMETA           ######"
+ui_print "#######        Disable AVB Vbmeta Tool         ######"
+ui_print "#######            xxx By Mehraan              ######"
 ui_print "#####################################################"
 
 sleep 1
 ui_print " "
 
-# Extract avbctl from zip to writeable RAM path (/tmp)
-ui_print "Extracting avbctl engine to temporary workspace..."
-unzip -o "$ZIPFILE" "avbctl" -d "/tmp/"
-chmod +x "/tmp/avbctl"
+# Universal AVB Engine Resolution:
+# 1. Prefer native recovery build environment commands if available.
+# 2. Fallback to extracting bundled high-performance static binary.
+AVB_ENGINE=""
+EXTRACTED=0
+
+if command -v avbctl >/dev/null 2>&1; then
+  AVB_ENGINE="avbctl"
+  ui_print "Using native recovery avbctl engine..."
+elif [ -f "/sbin/avbctl" ]; then
+  AVB_ENGINE="/sbin/avbctl"
+  ui_print "Using sbin avbctl engine..."
+elif [ -f "/system/bin/avbctl" ]; then
+  AVB_ENGINE="/system/bin/avbctl"
+  ui_print "Using system avbctl engine..."
+else
+  ui_print "No native avbctl found. Extracting bundled engine..."
+  unzip -o "$ZIPFILE" "avbctl" -d "/tmp/"
+  chmod +x "/tmp/avbctl"
+  AVB_ENGINE="/tmp/avbctl"
+  EXTRACTED=1
+fi
 
 sleep 1
 ui_print " "
 
-# Get avbctl status using the extracted engine
-VERITY=$(/tmp/avbctl get-verity)
-VERIFICATION=$(/tmp/avbctl get-verification)
+# Get avbctl status using resolved engine
+VERITY=$($AVB_ENGINE get-verity)
+VERIFICATION=$($AVB_ENGINE get-verification)
 
 # Print avb vbmeta status
 ui_print "Checking AVB Vbmeta status:"
@@ -44,8 +63,8 @@ if [[ $VERITY == *disabled* ]]; then
   ui_print "AVB verification is already disabled. Nothing to do."
 else
   ui_print "Disabling AVB verity & verification policy..."
-  DISABLE_VERITY=$(/tmp/avbctl --force disable-verity)
-  DISABLE_VERIFICATION=$(/tmp/avbctl --force disable-verification)
+  DISABLE_VERITY=$($AVB_ENGINE --force disable-verity)
+  DISABLE_VERIFICATION=$($AVB_ENGINE --force disable-verification)
   
   ui_print "  -> ${DISABLE_VERITY%%.*}"
   ui_print "  -> ${DISABLE_VERIFICATION%%.*}"
@@ -57,10 +76,13 @@ else
   ui_print "   you may need to perform a 'Format Data' partition operation in TWRP."
 fi
 
-# Cleanup temporary files
-rm -f "/tmp/avbctl"
+# Cleanup temporary files if extracted
+if [ $EXTRACTED -eq 1 ]; then
+  rm -f "/tmp/avbctl"
+fi
 
 # Done
 sleep 2
 exit 0
+
 
