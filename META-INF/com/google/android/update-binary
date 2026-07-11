@@ -14,7 +14,7 @@ ui_print() {
 
 ui_print "#####################################################"
 ui_print "#######        Disable AVB Vbmeta Tool         ######"
-ui_print "#######            xxx By Mehraan              ######"
+ui_print "#######             By Mehraan                 ######"
 ui_print "#####################################################"
 
 sleep 1
