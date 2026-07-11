@@ -8,6 +8,9 @@ A recovery-flashable POSIX updater ZIP to query, disable, and bypass Android Ver
 
 ---
 
+> [!CAUTION]
+> **I AM NOT RESPONSIBLE FOR BRICKED DEVICES.** Flashing partition verification bypasses and AVB-disable installers carries a significant risk of bricking your device or causing boot-loops. You are solely responsible for any damage or data loss. Proceed at your own risk.
+
 ### 🚀 Flashing Instructions
 1. Boot into custom recovery (TWRP/OrangeFox/PBRP).
 2. Go to **Install**, select **`Disable-Vbmeta-Flashable.zip`**, and swipe to flash.

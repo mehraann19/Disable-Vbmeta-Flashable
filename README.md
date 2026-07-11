@@ -16,6 +16,9 @@
 
 ---
 
+> [!CAUTION]
+> **I AM NOT RESPONSIBLE FOR BRICKED DEVICES.** Flashing partition verification bypasses and AVB-disable installers carries a significant risk of bricking your device or causing boot-loops. You are solely responsible for any damage or data loss. Proceed at your own risk.
+
 ## 📖 Introduction
 
 This repository contains a streamlined, POSIX-compliant **AVB Vbmeta Disabler** flashable package designed to run natively inside custom recovery environments (TWRP, OrangeFox, PBRP). 
